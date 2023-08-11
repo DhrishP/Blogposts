@@ -1,0 +1,66 @@
+---
+title: "All next js stripe commands"
+date: "2023-03-14"
+tags: ["next.js", "stripe", "payment"]
+---
+
+## Customer creation
+
+```ts
+import stripe from "stripe";
+const stripe = new stripe(process.env.STRIPE_SECRET_KEY);
+async function createCustomer() {
+  const customer = await stripe.customers.create({
+    email: "customer@example.com",
+  });
+  console.log(customer);
+}
+createCustomer();
+```
+
+## Checkout session
+
+```ts
+const transformedItem = {
+  price_data: {
+    currency: "usd",
+    product_data: {
+      images: [item.image],
+      name: item.name,
+    },
+    unit_amount: item.price * 100,
+  },
+  description: item.description,
+  quantity: item.quantity,
+};
+
+const session = await stripe.checkout.sessions.create({
+  payment_method_types: ["card"], //I think here is how you can setup ur GPAY
+  line_items: [transformedItem],
+  mode: "payment",
+  success_url: redirectURL + "?status=success",
+  cancel_url: redirectURL + "?status=cancel",
+  metadata: {
+    images: item.image, //data you want to transfer to webhooks
+  },
+}); //for more info on metedata --> https://stripe.com/docs/api/checkout/sessions/create#create_checkout_session-metadata
+
+res.json({ id: session.id });
+```
+
+### Creating checkout session
+
+```ts
+const createCheckOutSession = async () => {
+  const stripe = await stripePromise;
+  const checkoutSession = await axios.post("/api/create-stripe-session", {
+    item: item,
+  });
+  const result = await stripe.redirectToCheckout({
+    sessionId: checkoutSession.data.id,
+  });
+  if (result.error) {
+    alert(result.error.message);
+  }
+};
+```
